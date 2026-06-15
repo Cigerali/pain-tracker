@@ -18,6 +18,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -774,6 +775,57 @@
     .ins-range  { font-size: 12px; color: var(--t3); }
     .chart-wrap { border-radius: 10px; overflow: hidden; background: var(--bg); }
 
+    /* Window toggle */
+    .ins-window-row {
+      display: flex; gap: 6px;
+      padding: 14px 14px 0;
+    }
+    .ins-window-btn {
+      flex: 1; padding: 8px 4px;
+      border-radius: 10px;
+      border: 1.5px solid var(--bdr);
+      background: var(--card);
+      font-size: 13px; font-weight: 500; color: var(--t2);
+      cursor: pointer; min-height: 40px;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .ins-window-btn.ins-window-active {
+      background: var(--p); border-color: var(--p);
+      color: white; font-weight: 600;
+    }
+    .ins-window-btn:active { opacity: 0.75; }
+
+    /* Chart scroll */
+    .chart-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chart-scroll::-webkit-scrollbar { height: 3px; }
+    .chart-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+    /* No-data state */
+    .ins-no-data {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--t3);
+      font-size: 15px;
+    }
+
+    /* Avg/raw mode legend */
+    .ins-legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--t3);
+    }
+    .ins-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     .layer-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .layer-toggle {
       padding: 7px 14px; border-radius: 100px; min-height: 36px;
@@ -796,6 +848,19 @@
     }
     .btn-export:hover  { background: #e5e7eb; }
     .btn-export:active { opacity: 0.75; }
+
+    /* Summary stats */
+    .ins-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; padding:14px 14px 8px; }
+    .ins-stat-val { font-size:20px; font-weight:700; color:var(--t1); line-height:1.1; }
+    .ins-stat-lbl { font-size:11px; color:var(--t3); margin-top:2px; }
+
+    /* Band color-scale legend */
+    .ins-band-legend { margin-top:10px; }
+    .ins-band-scale { display:flex; align-items:center; gap:3px; margin-top:4px; flex-wrap:wrap; }
+    .ins-band-scale-name { font-size:10px; font-weight:600; color:var(--t2); min-width:106px; }
+    .ins-band-swatch { display:inline-flex; align-items:center; gap:2px; }
+    .ins-band-swatch-box { width:14px; height:8px; border-radius:2px; flex-shrink:0; border:1px solid rgba(0,0,0,0.07); }
+    .ins-band-swatch-lbl { font-size:9px; color:var(--t3); }
 
     /* Edit mode banner */
     .edit-mode-banner {
@@ -1151,22 +1216,58 @@
           <p>Loading data…</p>
         </div>
         <div id="insights-main" hidden>
+
+          <!-- Time window selector -->
+          <div class="ins-window-row">
+            <button class="ins-window-btn" data-days="7">7 days</button>
+            <button class="ins-window-btn ins-window-active" data-days="14">14 days</button>
+            <button class="ins-window-btn" data-days="30">30 days</button>
+            <button class="ins-window-btn" data-days="0">All</button>
+          </div>
+
+          <!-- Summary stats -->
+          <div class="insights-card" id="ins-stats-card">
+            <div class="ins-stats-grid" id="ins-stats-grid"></div>
+          </div>
+
+          <!-- Pain timeline card -->
           <div class="insights-card">
             <div class="ins-header">
-              <div class="entry-label" style="margin-bottom:0">Pain timeline</div>
+              <div class="entry-label" style="margin-bottom:0" id="ins-chart-label">Pain now</div>
               <span class="ins-range" id="ins-range-label"></span>
             </div>
             <div class="chart-wrap">
-              <svg id="pain-chart" style="display:block;width:100%"></svg>
+              <div class="chart-scroll" id="chart-scroll">
+                <svg id="pain-chart" style="display:block"></svg>
+              </div>
+              <div class="ins-no-data" id="ins-no-data" hidden>No data in this range</div>
             </div>
-            <div class="entry-label" style="margin-top:14px;margin-bottom:0">Marker layers</div>
+            <div class="ins-legend" id="ins-legend" hidden>
+              <span class="ins-legend-item">
+                <svg width="18" height="8" style="flex-shrink:0;display:block"><line x1="0" y1="4" x2="18" y2="4" stroke="#0891b2" stroke-width="2" stroke-linecap="round"/></svg>
+                daily avg
+              </span>
+              <span class="ins-legend-item">
+                <svg width="14" height="10" style="flex-shrink:0;display:block"><rect width="14" height="10" rx="2" fill="rgba(8,145,178,0.22)"/></svg>
+                daily peak
+              </span>
+            </div>
+            <div class="entry-label" style="margin-top:14px;margin-bottom:8px">Marker layers</div>
             <div class="layer-toggles" id="layer-toggles">
               <button class="layer-toggle on" data-layer="nsaid"     style="--lc:#f97316">NSAID</button>
-              <button class="layer-toggle on" data-layer="workout"   style="--lc:#10b981">Workout</button>
-              <button class="layer-toggle on" data-layer="yoga"      style="--lc:#8b5cf6">Yoga</button>
+              <button class="layer-toggle"    data-layer="workout"   style="--lc:#10b981">Workout</button>
+              <button class="layer-toggle"    data-layer="yoga"      style="--lc:#8b5cf6">Yoga</button>
               <button class="layer-toggle"    data-layer="stillness" style="--lc:#f59e0b">Stillness</button>
             </div>
+            <div class="entry-label" style="margin-top:14px;margin-bottom:8px">Daily bands</div>
+            <div class="layer-toggles" id="band-toggles">
+              <button class="layer-toggle on" data-band="stiffness" style="--lc:#f97316">Morn. stiffness</button>
+              <button class="layer-toggle on" data-band="nightpain"  style="--lc:#4f46e5">Night pain</button>
+            </div>
+            <div class="ins-band-legend" id="ins-band-legend" hidden></div>
           </div>
+
+          <!-- Export card -->
           <div class="insights-card">
             <div class="entry-label" style="margin-bottom:12px">Export</div>
             <div class="export-col">
@@ -1174,11 +1275,13 @@
               <button class="btn-export" id="btn-export-t2">⬇ Daily summaries (CSV)</button>
             </div>
           </div>
+
         </div>
         <div id="insights-empty" class="h-empty" hidden>
           <div class="h-empty-icon">📊</div>
           <p>Log some quick entries to see the pain timeline</p>
         </div>
+
       </div>
 
     </div><!-- /tab-content -->
@@ -1218,7 +1321,7 @@
       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import {
       getFirestore, collection, addDoc, serverTimestamp,
-      query, where, orderBy, getDocs, doc, setDoc, deleteDoc
+      query, where, orderBy, getDocs, doc, setDoc, deleteDoc, writeBatch
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     // ── Firebase init ─────────────────────────────────────────
@@ -2146,12 +2249,75 @@
 
     const LAYER_DEFS = {
       nsaid:     { label: 'NSAID',     color: '#f97316', test: e => (e.interventions ?? []).includes('NSAID'),   on: true  },
-      workout:   { label: 'Workout',   color: '#10b981', test: e => (e.interventions ?? []).includes('Workout'), on: true  },
-      yoga:      { label: 'Yoga',      color: '#8b5cf6', test: e => (e.interventions ?? []).includes('Yoga'),    on: true  },
+      workout:   { label: 'Workout',   color: '#10b981', test: e => (e.interventions ?? []).includes('Workout'), on: false },
+      yoga:      { label: 'Yoga',      color: '#8b5cf6', test: e => (e.interventions ?? []).includes('Yoga'),    on: false },
       stillness: { label: 'Stillness', color: '#f59e0b', test: e => (e.precedingStillnessRank ?? 0) > 0,        on: false },
     };
 
-    let insightsData = [];
+    const STIFFNESS_RANK = { 'None': 0, '<15 min': 1, '15–30 min': 2, '30–60 min': 3, '>60 min': 4 };
+
+    const BAND_DEFS = {
+      stiffness: {
+        label: 'Morning stiffness', labelShort: 'S', color: '#f97316', on: true,
+        colors:      ['#e5e7eb', '#fef9c3', '#fde047', '#f97316', '#dc2626'],
+        scaleLabels: ['None', '<15 min', '15–30 min', '30–60 min', '>60 min'],
+        getValue: d => Math.max(0, STIFFNESS_RANK[d.morningStiffness] ?? 0),
+      },
+      nightpain: {
+        label: 'Night pain', labelShort: 'N', color: '#4f46e5', on: true,
+        colors:      ['#e5e7eb', '#e0e7ff', '#818cf8', '#4f46e5', '#1e1b4b'],
+        scaleLabels: ['None', '1st half', '2nd half', '2nd half (woke)', 'Woke + moved'],
+        getValue: d => Math.max(0, d.nightPainRank ?? 0),
+      },
+    };
+
+    let insightsData      = [];
+    let insightsDailyData = new Map(); // date string → Tier-2 entry
+    let insightsWindow    = 14; // days; 0 = all time
+
+    function getWindowedData() {
+      if (insightsWindow === 0) return insightsData;
+      const cutoff = Date.now() - insightsWindow * 24 * 60 * 60 * 1000;
+      return insightsData.filter(e => e.ts.getTime() >= cutoff);
+    }
+
+    function getWindowedDailyData() {
+      const all = [...insightsDailyData.values()];
+      if (insightsWindow === 0) return all;
+      const c = new Date(Date.now() - insightsWindow * 24 * 60 * 60 * 1000);
+      const cut = `${c.getFullYear()}-${String(c.getMonth()+1).padStart(2,'0')}-${String(c.getDate()).padStart(2,'0')}`;
+      return all.filter(e => e.date >= cut);
+    }
+
+    function renderStats() {
+      const grid = document.getElementById('ins-stats-grid');
+      if (!grid) return;
+      const t1 = getWindowedData().filter(e => typeof e.painNow === 'number' && isFinite(e.painNow));
+      const t2 = getWindowedDailyData();
+
+      const avg  = t1.length ? (t1.reduce((s, e) => s + e.painNow, 0) / t1.length).toFixed(1) : '–';
+      const peak = t1.length ? Math.max(...t1.map(e => e.painNow)) : '–';
+      const nsaid   = t1.filter(e => (e.interventions ?? []).includes('NSAID')).length;
+      const nights  = t2.filter(e => (e.nightPainRank ?? 0) >= 2).length;
+      const trained = t2.filter(e => e.trained === true).length;
+      const yoga    = t2.filter(e => e.yoga    === true).length;
+
+      const stiffBuckets = {};
+      for (const e of t2) {
+        const s = e.morningStiffness;
+        if (s && s !== 'None') stiffBuckets[s] = (stiffBuckets[s] ?? 0) + 1;
+      }
+      const topStiff = Object.entries(stiffBuckets).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '–';
+
+      const st = (v, l) => `<div class="ins-stat"><div class="ins-stat-val">${v}</div><div class="ins-stat-lbl">${l}</div></div>`;
+      grid.innerHTML =
+        st(avg,                   'avg pain') +
+        st(peak,                  'peak pain') +
+        st(nsaid,                 'NSAID doses') +
+        st(nights,                'nights w/ 2nd-half pain') +
+        st(topStiff,              'most common stiffness') +
+        st(`${trained} / ${yoga}`, 'trained / yoga days');
+    }
 
     async function loadInsights() {
       if (!currentUser) return;
@@ -2164,111 +2330,356 @@
       emptyEl.hidden   = true;
 
       try {
-        const q    = query(collection(db, 'users', currentUser.uid, 'entries'),
-                           where('type', '==', 'quick'), orderBy('savedAt', 'asc'));
-        const snap = await getDocs(q);
+        const coll = collection(db, 'users', currentUser.uid, 'entries');
+        const [snapT1, snapT2] = await Promise.all([
+          getDocs(query(coll, where('type', '==', 'quick'))),
+          getDocs(query(coll, where('type', '==', 'daily'))),
+        ]);
         loadingEl.hidden = true;
 
-        insightsData = snap.docs.map(d => {
+        insightsData = snapT1.docs.map(d => {
           const data = d.data();
           return { ...data, ts: data.ts?.toDate?.() ?? data.savedAt?.toDate?.() ?? null };
         }).filter(e => e.ts);
+        insightsData.sort((a, b) => a.ts - b.ts);
+
+        insightsDailyData = new Map();
+        for (const d of snapT2.docs) {
+          const data = d.data();
+          if (data.date) insightsDailyData.set(data.date, data);
+        }
 
         if (!insightsData.length) { emptyEl.hidden = false; return; }
 
         mainEl.hidden = false;
-        const fmt = ts => ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        document.getElementById('ins-range-label').textContent =
-          fmt(insightsData[0].ts) + ' – ' + fmt(insightsData[insightsData.length - 1].ts);
-
-        // Wait one microtask so the container is visible and has layout
         requestAnimationFrame(drawChart);
       } catch (err) {
-        console.error(err);
+        console.error('[loadInsights]', err?.message, err?.stack, err);
         loadingEl.hidden = true;
         toast('Failed to load insights.');
       }
     }
 
-    function drawChart() {
-      const svg = document.getElementById('pain-chart');
-      const W   = svg.parentElement.clientWidth || 460;
-
-      const PAD_L = 24, PAD_R = 8, PAD_T = 10;
-      const CHART_W = W - PAD_L - PAD_R;
-      const CHART_H = 140;
-      const XAXIS_H = 20;
-      const MROW_H  = 12;
-
-      const activeLayers = Object.entries(LAYER_DEFS).filter(([, d]) => d.on);
-      const SVG_H = PAD_T + CHART_H + XAXIS_H + activeLayers.length * MROW_H + 4;
-
-      svg.setAttribute('width',   W);
-      svg.setAttribute('height',  SVG_H);
-      svg.setAttribute('viewBox', `0 0 ${W} ${SVG_H}`);
-
-      const entries = insightsData;
-      if (!entries.length) return;
-
-      const t0 = entries[0].ts.getTime();
-      const t1 = entries[entries.length - 1].ts.getTime();
-      const span = Math.max(t1 - t0, 1);
-
-      const xOf = ts  => PAD_L + ((ts.getTime() - t0) / span) * CHART_W;
-      const yOf = p   => PAD_T + CHART_H * (1 - p / 10);
-
-      let h = '';
-
-      // Grid + y-axis labels
-      for (const v of [0, 2, 4, 6, 8, 10]) {
-        const y = yOf(v).toFixed(1);
-        h += `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" stroke="${v % 5 === 0 ? '#e5e7eb' : '#f3f4f6'}" stroke-width="1"/>`;
-        if (v % 5 === 0) h += `<text x="${PAD_L - 4}" y="${+y + 4}" text-anchor="end" font-size="9" fill="#9ca3af">${v}</text>`;
-      }
-
-      // Connecting line
-      if (entries.length > 1) {
-        const pts = entries.map(e => `${xOf(e.ts).toFixed(1)},${yOf(e.painNow).toFixed(1)}`).join(' ');
-        h += `<polyline points="${pts}" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linejoin="round"/>`;
-      }
-
-      // Pain dots
-      entries.forEach(e => {
-        const x = xOf(e.ts).toFixed(1), y = yOf(e.painNow).toFixed(1);
-        h += `<circle cx="${x}" cy="${y}" r="5" fill="${painColor(e.painNow)}" stroke="white" stroke-width="1.5"/>`;
-      });
-
-      // X-axis date labels (weekly ticks from range start)
-      const weekMs = 7 * 24 * 60 * 60 * 1000;
-      let tick = new Date(t0); tick.setHours(0, 0, 0, 0);
-      tick = new Date(Math.ceil((tick.getTime() + 1) / weekMs) * weekMs);
-      const labelY = PAD_T + CHART_H + 14;
-      while (tick.getTime() <= t1) {
-        const x = xOf(tick);
-        if (x > PAD_L + 8 && x < W - PAD_R - 8) {
-          const lbl = tick.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          h += `<text x="${x.toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="#9ca3af">${lbl}</text>`;
+    // Group plottable entries by calendar day → { key, avg, max, noonMs }
+    function buildDailyAggregates(plottable) {
+      const byDay = new Map();
+      for (const e of plottable) {
+        const ts  = e.ts;
+        const key = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}-${String(ts.getDate()).padStart(2,'0')}`;
+        if (!byDay.has(key)) {
+          const noonMs = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate(), 12, 0, 0, 0).getTime();
+          byDay.set(key, { sum: 0, count: 0, max: 0, noonMs });
         }
-        tick = new Date(tick.getTime() + weekMs);
+        const d = byDay.get(key);
+        d.sum   += e.painNow;
+        d.count += 1;
+        d.max    = Math.max(d.max, e.painNow);
+      }
+      return [...byDay.entries()]
+        .map(([key, d]) => ({ key, avg: d.sum / d.count, max: d.max, noonMs: d.noonMs }))
+        .sort((a, b) => a.noonMs - b.noonMs);
+    }
+
+    // Split sorted day array into runs of calendar-adjacent days (gap = missing day)
+    function groupConsecutiveRuns(days) {
+      if (!days.length) return [];
+      const runs = [[days[0]]];
+      for (let i = 1; i < days.length; i++) {
+        const diffDays = Math.round((days[i].noonMs - days[i-1].noonMs) / 86400000);
+        if (diffDays === 1) {
+          runs[runs.length - 1].push(days[i]);
+        } else {
+          runs.push([days[i]]);
+        }
+      }
+      return runs;
+    }
+
+    // Returns Map<dateKey, { noonMs, markers: Set<layerKey> }> for marker row rendering
+    function buildDayMarkerSets(plottable) {
+      const byDay = new Map();
+      for (const e of plottable) {
+        const ts  = e.ts;
+        const key = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}-${String(ts.getDate()).padStart(2,'0')}`;
+        if (!byDay.has(key)) {
+          const noonMs = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate(), 12, 0, 0, 0).getTime();
+          byDay.set(key, { noonMs, markers: new Set() });
+        }
+        const d = byDay.get(key);
+        for (const [layerKey, def] of Object.entries(LAYER_DEFS)) {
+          if (def.test(e)) d.markers.add(layerKey);
+        }
+      }
+      return byDay;
+    }
+
+    function drawChart() {
+      const data      = getWindowedData();
+      const svg       = document.getElementById('pain-chart');
+      const scrollEl  = document.getElementById('chart-scroll');
+      const noDataEl  = document.getElementById('ins-no-data');
+      const rangeEl   = document.getElementById('ins-range-label');
+      const chartLbl  = document.getElementById('ins-chart-label');
+      const legendEl  = document.getElementById('ins-legend');
+
+      const isAveraged = insightsWindow === 0 || insightsWindow > 14;
+
+      // Header label and legend reflect current mode
+      chartLbl.textContent = isAveraged ? 'Pain now · daily avg' : 'Pain now · raw readings';
+
+      // Range label
+      const now = new Date();
+      const fmtDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const winStart = insightsWindow === 0
+        ? insightsData[0].ts
+        : new Date(Date.now() - insightsWindow * 24 * 60 * 60 * 1000);
+      rangeEl.textContent = fmtDate(winStart) + ' – ' + fmtDate(now);
+
+      renderStats();
+
+      // Empty-window state
+      if (!data.length) {
+        scrollEl.hidden = true;
+        noDataEl.hidden = false;
+        legendEl.hidden = true;
+        svg.innerHTML   = '';
+        return;
+      }
+      scrollEl.hidden = false;
+      noDataEl.hidden = true;
+      legendEl.hidden = false;
+      const activeLayers = Object.keys(LAYER_DEFS).filter(k => LAYER_DEFS[k].on);
+      const modeHtml = isAveraged
+        ? `<span class="ins-legend-item"><svg width="18" height="8" style="flex-shrink:0;display:block"><line x1="0" y1="4" x2="18" y2="4" stroke="#0891b2" stroke-width="2" stroke-linecap="round"/></svg>daily avg</span><span class="ins-legend-item"><svg width="14" height="10" style="flex-shrink:0;display:block"><rect width="14" height="10" rx="2" fill="rgba(8,145,178,0.22)"/></svg>daily peak</span>`
+        : `<span class="ins-legend-item"><svg width="28" height="10" style="flex-shrink:0;display:block"><line x1="0" y1="5" x2="28" y2="5" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/><circle cx="14" cy="5" r="4" fill="#f97316" stroke="white" stroke-width="1.5"/></svg>raw readings</span>`;
+      legendEl.innerHTML = modeHtml + activeLayers.map(k => {
+        const d = LAYER_DEFS[k];
+        return `<span class="ins-legend-item"><svg width="10" height="10" style="flex-shrink:0;display:block"><circle cx="5" cy="5" r="4" fill="${d.color}"/></svg>${d.label}</span>`;
+      }).join('');
+
+      // Container width (chart-wrap is always laid out)
+      const containerW = scrollEl.parentElement.clientWidth || 340;
+
+      // Only entries with a valid numeric painNow
+      const plottable = data.filter(e => typeof e.painNow === 'number' && isFinite(e.painNow));
+
+      // X-axis bounds: windowed views end at "now"; All starts at midnight of first data day
+      const nowMs = now.getTime();
+      let xStartMs;
+      if (insightsWindow === 0) {
+        const s = new Date(data[0].ts);
+        s.setHours(0, 0, 0, 0);
+        xStartMs = s.getTime();
+      } else {
+        xStartMs = nowMs - insightsWindow * 24 * 60 * 60 * 1000;
+      }
+      const xEndMs   = nowMs;
+      const spanMs   = Math.max(xEndMs - xStartMs, 1);
+      const spanDays = spanMs / 86400000;
+
+      // SVG width: fit container for ≤14d; min 28px/day for wider windows
+      const svgW = (insightsWindow > 0 && insightsWindow <= 14)
+        ? containerW
+        : Math.max(containerW, Math.ceil(spanDays * 28));
+
+      const PAD_L = 28, PAD_R = 14, PAD_T = 12;
+      const CHART_H = 140, XAXIS_H = 22, MROW_H = 16, BAND_H = 10, BAND_GAP = 2;
+      const activeBands = Object.keys(BAND_DEFS).filter(k => BAND_DEFS[k].on);
+      const BAND_AREA_H = activeBands.length * (BAND_H + BAND_GAP) + (activeBands.length ? BAND_GAP : 0);
+      const xAxisY = PAD_T + CHART_H + BAND_AREA_H;
+      const SVG_H  = xAxisY + XAXIS_H + activeLayers.length * MROW_H;
+      const CHART_W = svgW - PAD_L - PAD_R;
+
+      svg.setAttribute('width',   svgW);
+      svg.setAttribute('height',  SVG_H);
+      svg.setAttribute('viewBox', `0 0 ${svgW} ${SVG_H}`);
+
+      const xOf = ms => PAD_L + ((ms - xStartMs) / spanMs) * CHART_W;
+      const yOf = p  => PAD_T + CHART_H * (1 - p / 10);
+
+      let h = '<defs><pattern id="no-data-hatch" patternUnits="userSpaceOnUse" width="6" height="6"><path d="M-1,1 l2,-2 M0,6 l6,-6 M5,7 l2,-2" stroke="#d1d5db" stroke-width="1.2" stroke-linecap="round"/></pattern></defs>';
+
+      // Y-axis grid and labels
+      for (const v of [2, 4, 6, 8]) {
+        const y = yOf(v).toFixed(1);
+        h += `<line x1="${PAD_L}" y1="${y}" x2="${svgW - PAD_R}" y2="${y}" stroke="#f0f2f4" stroke-width="0.75"/>`;
+      }
+      for (const v of [0, 5, 10]) {
+        const y = yOf(v).toFixed(1);
+        h += `<line x1="${PAD_L}" y1="${y}" x2="${svgW - PAD_R}" y2="${y}" stroke="#e2e6ea" stroke-width="1"/>`;
+        h += `<text x="${PAD_L - 4}" y="${(+y + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="#9ca3af">${v}</text>`;
       }
 
-      // Marker rows (one per active layer)
-      activeLayers.forEach(([, def], i) => {
-        const cy = PAD_T + CHART_H + XAXIS_H + i * MROW_H + MROW_H / 2;
-        entries.filter(e => def.test(e)).forEach(e => {
-          h += `<circle cx="${xOf(e.ts).toFixed(1)}" cy="${cy}" r="3.5" fill="${def.color}"/>`;
+      if (isAveraged) {
+        // ── Averaged mode: one point per calendar day ─────────
+        const days = buildDailyAggregates(plottable);
+        const runs = groupConsecutiveRuns(days);
+
+        for (const run of runs) {
+          if (run.length < 2) continue; // single-day runs: dot only, drawn below
+
+          // Peak band: forward along max (top edge), backward along avg (bottom edge)
+          const hasBand = run.some(d => d.max > d.avg);
+          if (hasBand) {
+            const fwdMax = run.map(d =>
+              `${xOf(d.noonMs).toFixed(1)},${yOf(d.max).toFixed(1)}`).join(' ');
+            const bwdAvg = [...run].reverse().map(d =>
+              `${xOf(d.noonMs).toFixed(1)},${yOf(d.avg).toFixed(1)}`).join(' ');
+            h += `<polygon points="${fwdMax} ${bwdAvg}" fill="rgba(8,145,178,0.13)" stroke="none"/>`;
+          }
+
+          // Avg line
+          const pts = run.map(d =>
+            `${xOf(d.noonMs).toFixed(1)},${yOf(d.avg).toFixed(1)}`).join(' ');
+          h += `<polyline points="${pts}" fill="none" stroke="#0891b2" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>`;
+        }
+
+        // Avg dots (drawn last so they sit on top of bands and lines)
+        for (const day of days) {
+          const x = xOf(day.noonMs).toFixed(1);
+          const y = yOf(day.avg).toFixed(1);
+          h += `<circle cx="${x}" cy="${y}" r="4" fill="${painColor(day.avg)}" stroke="white" stroke-width="1.5"/>`;
+        }
+
+      } else {
+        // ── Raw mode: every Tier-1 reading ────────────────────
+        if (plottable.length > 1) {
+          const pts = plottable.map(e =>
+            `${xOf(e.ts.getTime()).toFixed(1)},${yOf(e.painNow).toFixed(1)}`).join(' ');
+          h += `<polyline points="${pts}" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+        }
+        plottable.forEach(e => {
+          const x = xOf(e.ts.getTime()).toFixed(1);
+          const y = yOf(e.painNow).toFixed(1);
+          h += `<circle cx="${x}" cy="${y}" r="4.5" fill="${painColor(e.painNow)}" stroke="white" stroke-width="1.5"/>`;
         });
-      });
+      }
+
+      // ── Secondary indicator bands (morning stiffness, night pain) ──
+      const bandLegendEl = document.getElementById('ins-band-legend');
+      if (activeBands.length) {
+        const t2win = getWindowedDailyData();
+        const t2Map = new Map(t2win.map(d => [d.date, d]));
+        let bandLegendHtml = '';
+        const dayStart = new Date(xStartMs); dayStart.setHours(0, 0, 0, 0);
+
+        activeBands.forEach((bandKey, bi) => {
+          const def  = BAND_DEFS[bandKey];
+          const bandY = PAD_T + CHART_H + BAND_GAP + bi * (BAND_H + BAND_GAP);
+          // Left-margin label in band color
+          h += `<text x="${(PAD_L - 3).toFixed(1)}" y="${(bandY + BAND_H / 2 + 3).toFixed(1)}" text-anchor="end" font-size="8" font-weight="600" fill="${def.color}">${def.labelShort}</text>`;
+          // One rectangle per day in window
+          const day = new Date(dayStart);
+          while (day.getTime() <= xEndMs) {
+            const dayMs  = day.getTime();
+            const nextMs = dayMs + 86400000;
+            const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+            const entry = t2Map.get(dateStr);
+            const x1 = Math.max(PAD_L, xOf(dayMs));
+            const x2 = Math.min(svgW - PAD_R, xOf(nextMs));
+            if (x2 > x1) {
+              if (entry) {
+                const fill = def.colors[def.getValue(entry)];
+                h += `<rect x="${x1.toFixed(1)}" y="${bandY.toFixed(1)}" width="${(x2-x1).toFixed(1)}" height="${BAND_H}" fill="${fill}" rx="1"/>`;
+              } else {
+                h += `<rect x="${x1.toFixed(1)}" y="${bandY.toFixed(1)}" width="${(x2-x1).toFixed(1)}" height="${BAND_H}" fill="url(#no-data-hatch)" rx="1"/>`;
+              }
+            }
+            day.setDate(day.getDate() + 1);
+          }
+          // Build HTML legend row for this band
+          bandLegendHtml += `<div class="ins-band-scale"><span class="ins-band-scale-name">${def.label}</span>`;
+          bandLegendHtml += `<span class="ins-band-swatch"><span class="ins-band-swatch-box" style="background:${def.colors[0]}"></span><span class="ins-band-swatch-lbl">None</span></span>`;
+          def.scaleLabels.slice(1).forEach((lbl, i) => {
+            bandLegendHtml += `<span class="ins-band-swatch"><span class="ins-band-swatch-box" style="background:${def.colors[i+1]}"></span><span class="ins-band-swatch-lbl">${lbl}</span></span>`;
+          });
+          bandLegendHtml += `<span class="ins-band-swatch"><span class="ins-band-swatch-box" style="background:repeating-linear-gradient(-45deg,#d1d5db 0,#d1d5db 1px,white 1px,white 4px)"></span><span class="ins-band-swatch-lbl">no data</span></span>`;
+          bandLegendHtml += '</div>';
+        });
+        if (bandLegendEl) { bandLegendEl.innerHTML = bandLegendHtml; bandLegendEl.hidden = false; }
+      } else {
+        if (bandLegendEl) bandLegendEl.hidden = true;
+      }
+
+      // X-axis ticks
+      const tickIntervalDays = spanDays <= 8 ? 1 : spanDays <= 22 ? 2 : spanDays <= 70 ? 7 : 14;
+      const labelY = (xAxisY + 15).toFixed(1);
+      const tickY1 = xAxisY.toFixed(1);
+      const tickY2 = (xAxisY + 4).toFixed(1);
+
+      const tick = new Date(xStartMs);
+      tick.setHours(0, 0, 0, 0);
+      tick.setDate(tick.getDate() + 1); // first midnight inside the range
+
+      while (tick.getTime() <= xEndMs) {
+        const x    = xOf(tick.getTime());
+        const xStr = x.toFixed(1);
+        if (x >= PAD_L + 10 && x <= svgW - PAD_R - 10) {
+          const lbl = tick.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          h += `<line x1="${xStr}" y1="${tickY1}" x2="${xStr}" y2="${tickY2}" stroke="#d1d5db" stroke-width="1"/>`;
+          h += `<text x="${xStr}" y="${labelY}" text-anchor="middle" font-size="9" fill="#9ca3af">${lbl}</text>`;
+        }
+        tick.setDate(tick.getDate() + tickIntervalDays);
+      }
+
+      // ── Marker rows (one row per active layer, below x-axis) ───
+      if (activeLayers.length && plottable.length) {
+        const dayMarkers = buildDayMarkerSets(plottable);
+        activeLayers.forEach((layerKey, li) => {
+          const def    = LAYER_DEFS[layerKey];
+          const rowTop = xAxisY + XAXIS_H + li * MROW_H;
+          const cy     = (rowTop + MROW_H / 2).toFixed(1);
+          // Faint separator between rows
+          h += `<line x1="${PAD_L}" y1="${rowTop.toFixed(1)}" x2="${(svgW - PAD_R).toFixed(1)}" y2="${rowTop.toFixed(1)}" stroke="#f0f2f4" stroke-width="1"/>`;
+          // Single-letter row label in layer color at left margin
+          h += `<text x="${(PAD_L - 3).toFixed(1)}" y="${(rowTop + MROW_H / 2 + 3.5).toFixed(1)}" text-anchor="end" font-size="9" font-weight="600" fill="${def.color}">${def.label[0]}</text>`;
+          if (isAveraged) {
+            for (const [, d] of dayMarkers) {
+              if (!d.markers.has(layerKey)) continue;
+              const x = xOf(d.noonMs);
+              if (x < PAD_L || x > svgW - PAD_R) continue;
+              h += `<circle cx="${x.toFixed(1)}" cy="${cy}" r="4" fill="${def.color}" opacity="0.85"/>`;
+            }
+          } else {
+            for (const e of plottable) {
+              if (!def.test(e)) continue;
+              const x = xOf(e.ts.getTime());
+              if (x < PAD_L || x > svgW - PAD_R) continue;
+              h += `<circle cx="${x.toFixed(1)}" cy="${cy}" r="4" fill="${def.color}" opacity="0.85"/>`;
+            }
+          }
+        });
+      }
 
       svg.innerHTML = h;
     }
 
-    // Layer toggle buttons
-    document.querySelectorAll('.layer-toggle').forEach(btn => {
+    // Window toggle
+    document.querySelectorAll('.ins-window-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const layer = btn.dataset.layer;
-        LAYER_DEFS[layer].on = !LAYER_DEFS[layer].on;
-        btn.classList.toggle('on', LAYER_DEFS[layer].on);
+        document.querySelectorAll('.ins-window-btn').forEach(b => b.classList.remove('ins-window-active'));
+        btn.classList.add('ins-window-active');
+        insightsWindow = parseInt(btn.dataset.days, 10);
+        if (insightsData.length) drawChart();
+      });
+    });
+
+    // Layer toggles
+    document.querySelectorAll('.layer-toggle[data-layer]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.layer;
+        LAYER_DEFS[key].on = !LAYER_DEFS[key].on;
+        btn.classList.toggle('on');
+        if (insightsData.length) drawChart();
+      });
+    });
+
+    // Band toggles
+    document.querySelectorAll('.layer-toggle[data-band]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.band;
+        BAND_DEFS[key].on = !BAND_DEFS[key].on;
+        btn.classList.toggle('on');
         if (insightsData.length) drawChart();
       });
     });
