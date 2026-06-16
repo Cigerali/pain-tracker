@@ -24,12 +24,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--t1);
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
       overflow: hidden;
-      align-items: center;
     }
 
     /* ── Screens ─────────────────────────────────────────────── */
@@ -38,24 +33,27 @@
     #screen-signin,
     #screen-app {
       display: none;
-      flex: 1;
+      position: fixed;
+      inset: 0;
       flex-direction: column;
-      width: 100%;
-      max-width: 520px;
     }
 
     /* ── Desktop: natural-scroll layout ─────────────────────── */
     @media (min-width: 540px) {
       body {
         background: #aab4bf;
-        height: auto;
-        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         overflow-x: hidden;
         overflow-y: auto;
+        min-height: 100vh;
       }
       #screen-loading,
       #screen-signin,
       #screen-app {
+        position: static;
+        inset: auto;
         flex: none;
         height: auto;
         width: 100%;
@@ -225,8 +223,9 @@
     .tab-content {
       flex: 1;
       min-height: 0;
-      overflow-y: auto;
+      overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
       background: var(--bg);
     }
 
@@ -971,6 +970,16 @@
             </div>
 
             <div class="entry-card">
+              <div class="entry-label">Radiating down the leg?</div>
+              <div class="pill-row" id="radiation-group">
+                <button type="button" class="pill" data-val="None"           data-rank="0">None</button>
+                <button type="button" class="pill" data-val="Buttock or hip" data-rank="1">Buttock or hip</button>
+                <button type="button" class="pill" data-val="Above knee"     data-rank="2">Above knee</button>
+                <button type="button" class="pill" data-val="Below knee"     data-rank="3">Below knee</button>
+              </div>
+            </div>
+
+            <div class="entry-card">
               <div class="entry-label">Position / context now</div>
               <div class="pill-row" id="position-now-group">
                 <button type="button" class="pill" data-val="Sitting">Sitting</button>
@@ -1028,6 +1037,8 @@
                 <button type="button" class="chip" data-val="Heat">Heat</button>
                 <button type="button" class="chip" data-val="Rest">Rest</button>
                 <button type="button" class="chip" data-val="Walking">Walking</button>
+                <button type="button" class="chip" data-val="Cycling">Cycling</button>
+                <button type="button" class="chip" data-val="Carrying">Carrying</button>
                 <button type="button" class="chip" data-val="None">None</button>
               </div>
               <input type="text" id="nsaid-dose" class="dose-input inline-text"
@@ -1258,6 +1269,9 @@
               <button class="layer-toggle"    data-layer="workout"   style="--lc:#10b981">Workout</button>
               <button class="layer-toggle"    data-layer="yoga"      style="--lc:#8b5cf6">Yoga</button>
               <button class="layer-toggle"    data-layer="stillness" style="--lc:#f59e0b">Stillness</button>
+              <button class="layer-toggle"    data-layer="radiation" style="--lc:#ef4444">Radiation</button>
+              <button class="layer-toggle"    data-layer="cycling"   style="--lc:#06b6d4">Cycling</button>
+              <button class="layer-toggle"    data-layer="carrying"  style="--lc:#ec4899">Carrying</button>
             </div>
             <div class="entry-label" style="margin-top:14px;margin-bottom:8px">Daily bands</div>
             <div class="layer-toggles" id="band-toggles">
@@ -1615,7 +1629,8 @@
       stillnessToggle.setAttribute('aria-expanded', String(!open));
     });
 
-    const stillnessGroup = makeSingleSelect('stillness-group');
+    const stillnessGroup  = makeSingleSelect('stillness-group');
+    const radiationGroup  = makeSingleSelect('radiation-group');
 
     // Interventions multi-select (Tier 1 inline code)
     const nsaidDoseInput = document.getElementById('nsaid-dose');
@@ -1694,6 +1709,13 @@
           }
         }
 
+        const radVal = radiationGroup.getValue();
+        if (radVal !== null) {
+          entry.legRadiation     = radVal;
+          entry.legRadiationRank = parseInt(
+            document.querySelector(`#radiation-group .pill[data-val="${CSS.escape(radVal)}"]`)?.dataset.rank ?? '0', 10);
+        }
+
         entry.interventions = [...selectedInterventions];
         if (selectedInterventions.has('NSAID')) {
           entry.nsaidDose = nsaidDoseInput.value.trim();
@@ -1737,6 +1759,7 @@
       peakPositionGroup.reset();
       stillnessBody.hidden = true; stillnessIcon.classList.remove('open');
       stillnessToggle.setAttribute('aria-expanded', 'false'); stillnessGroup.reset();
+      radiationGroup.reset();
       resetInterventions();
       document.getElementById('entry-note').value = '';
       document.getElementById('edit-mode-banner').hidden = true;
@@ -2083,6 +2106,8 @@
       if (data.peak)         html += `<div class="h-field-row">Peak: <strong>${data.peak.pain}/10</strong>${data.peak.position ? ' · ' + data.peak.position : ''}</div>`;
       if (data.precedingStillness && data.precedingStillness !== 'None')
         html += `<div class="h-field-row">Still before: <strong>${data.precedingStillness}</strong></div>`;
+      if (data.legRadiation && data.legRadiation !== 'None')
+        html += `<div class="h-field-row">Radiation: <strong>${data.legRadiation}</strong></div>`;
       if (data.note)         html += `<div class="h-note-text">"${escHtml(data.note)}"</div>`;
       html += `</div>
         <div class="h-actions">
@@ -2233,6 +2258,9 @@
         stillnessGroup.setValue(data.precedingStillness);
       }
 
+      radiationGroup.reset();
+      if (data.legRadiation) radiationGroup.setValue(data.legRadiation);
+
       resetInterventions();
       (data.interventions ?? []).forEach(val => {
         const chip = document.querySelector(`#intervention-group .chip[data-val="${val}"]`);
@@ -2248,10 +2276,13 @@
     // ── Insights tab ──────────────────────────────────────────
 
     const LAYER_DEFS = {
-      nsaid:     { label: 'NSAID',     color: '#f97316', test: e => (e.interventions ?? []).includes('NSAID'),   on: true  },
-      workout:   { label: 'Workout',   color: '#10b981', test: e => (e.interventions ?? []).includes('Workout'), on: false },
-      yoga:      { label: 'Yoga',      color: '#8b5cf6', test: e => (e.interventions ?? []).includes('Yoga'),    on: false },
-      stillness: { label: 'Stillness', color: '#f59e0b', test: e => (e.precedingStillnessRank ?? 0) > 0,        on: false },
+      nsaid:     { label: 'NSAID',     color: '#f97316', test: e => (e.interventions ?? []).includes('NSAID'),    on: true  },
+      workout:   { label: 'Workout',   color: '#10b981', test: e => (e.interventions ?? []).includes('Workout'),  on: false },
+      yoga:      { label: 'Yoga',      color: '#8b5cf6', test: e => (e.interventions ?? []).includes('Yoga'),     on: false },
+      stillness: { label: 'Stillness', color: '#f59e0b', test: e => (e.precedingStillnessRank ?? 0) > 0,         on: false },
+      radiation: { label: 'Radiation', color: '#ef4444', test: e => (e.legRadiationRank ?? 0) > 0,               on: false },
+      cycling:   { label: 'Cycling',   color: '#06b6d4', test: e => (e.interventions ?? []).includes('Cycling'),  on: false },
+      carrying:  { label: 'Carrying',  color: '#ec4899', test: e => (e.interventions ?? []).includes('Carrying'), on: false },
     };
 
     const STIFFNESS_RANK = { 'None': 0, '<15 min': 1, '15–30 min': 2, '30–60 min': 3, '>60 min': 4 };
@@ -2694,7 +2725,8 @@
           where('type', '==', 'quick'), orderBy('savedAt', 'asc')
         ));
         const header = ['timestamp','painNow','positionNow','peakPain','peakPosition',
-                        'interventions','nsaidDose','precedingStillness','precedingStillnessRank','note'];
+                        'interventions','nsaidDose','precedingStillness','precedingStillnessRank',
+                        'legRadiation','legRadiationRank','note'];
         const rows = snap.docs.map(d => {
           const e = d.data();
           const ts = e.ts?.toDate?.() ?? e.savedAt?.toDate?.() ?? null;
@@ -2708,6 +2740,8 @@
             e.nsaidDose ?? '',
             e.precedingStillness ?? '',
             e.precedingStillnessRank ?? '',
+            e.legRadiation ?? '',
+            e.legRadiationRank ?? '',
             e.note ?? '',
           ];
         });
